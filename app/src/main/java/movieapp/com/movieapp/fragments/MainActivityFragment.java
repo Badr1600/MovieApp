@@ -90,8 +90,6 @@ public class MainActivityFragment extends Fragment  {
                     public void onRefresh() {
                         Log.i("swipe_action", "onRefresh called from SwipeRefreshLayout");
                         refreshMoviesData();
-//                        Intent i = new Intent(getActivity(), ScrollingActivityDetails.class);
-//                        startActivity(i);
                         swipeRefreshLayout.setRefreshing(false);
                     }
                 }
