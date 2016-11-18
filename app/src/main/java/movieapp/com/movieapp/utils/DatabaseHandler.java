@@ -147,4 +147,17 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         db.close();
     }
 
+    public boolean isEmpty(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        String count = "SELECT count(*) FROM " + TABLE_Movies;
+        Cursor cursor = db.rawQuery(count, null);
+        cursor.moveToFirst();
+        int countItems = cursor.getInt(0);
+        Log.i("db count","" + countItems);
+        db.close();
+        if(countItems > 0)
+        return false;
+        return true;
+    }
+
 }

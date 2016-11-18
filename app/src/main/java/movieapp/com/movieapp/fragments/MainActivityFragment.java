@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -52,7 +53,7 @@ public class MainActivityFragment extends Fragment  {
     public static GridView gridView;
     private GridViewAdapter gridAdapter;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private DatabaseHandler db ;
+    public static DatabaseHandler db ;
     private int currentVisibleItem;
     private int currentFirstVisibleItem;
     private int currentScrollState;
@@ -110,7 +111,7 @@ public class MainActivityFragment extends Fragment  {
         });
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        syncConnPref = sharedPref.getString("sort_type", "");
+        syncConnPref = sharedPref.getString("sort_type", "top_rated");
 
         if(!syncConnPref.equals("favorite")){
             String url = Constants.API_URL + syncConnPref + Constants.API_KEY + BuildConfig.API_KEY;
@@ -130,22 +131,23 @@ public class MainActivityFragment extends Fragment  {
             gridAdapter.notifyDataSetChanged();
             gridView.setAdapter(gridAdapter);
             getActivity().setTitle("Fav Movies");
+            Log.i("fav movies", "db loaded");
         }
         return rootView;
     }
 
     private void refreshMoviesData (){
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        syncConnPref = sharedPref.getString("sort_type", "");
+        syncConnPref = sharedPref.getString("sort_type", "top_rated");
 
-        if(!syncConnPref.equals("favorite") && !isFav()){
+        if(!syncConnPref.equals("favorite")){
             String url = Constants.API_URL + syncConnPref + Constants.API_KEY + BuildConfig.API_KEY;
-            if(syncConnPref.equals("popular") && !isPop()){
+            if(syncConnPref.equals("popular")){
                 resetScrollGridView();
                 setPop();
                 getMoviesData(url);
                 getActivity().setTitle("Pop Movies");
-            } if(syncConnPref.equals("top_rated") && !isTop()) {
+            } if(syncConnPref.equals("top_rated")) {
                 resetScrollGridView();
                 setTop();
                 getMoviesData(url);
@@ -160,11 +162,15 @@ public class MainActivityFragment extends Fragment  {
             gridAdapter.notifyDataSetChanged();
             gridView.setAdapter(gridAdapter);
             getActivity().setTitle("Fav Movies");
+            Log.i("fav movies", "db loaded");
+
         }
     }
 
     private void isScrollCompleted() {
         if (currentVisibleItem > 0 && this.currentScrollState == SCROLL_STATE_IDLE) {
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            syncConnPref = sharedPref.getString("sort_type", "top_rated");
             /*** In this way I detect if there's been a scroll which has completed ***/
             /*** do the work for load more date! ***/
             Log.i("test", "test: " + currentFirstVisibleItem);
@@ -194,31 +200,35 @@ public class MainActivityFragment extends Fragment  {
     public void onResume() {
         super.onResume();
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        String syncConnPref = sharedPref.getString("sort_type", "");
+        String syncConnPref = sharedPref.getString("sort_type", "top_rated");
 
-        if(!syncConnPref.equals("favorite") && !isFav()){
-            String url = Constants.API_URL + syncConnPref + Constants.API_KEY + BuildConfig.API_KEY;
-            if(syncConnPref.equals("popular") && !isPop()){
+        if (!syncConnPref.equals(this.syncConnPref)) {
+            if(!syncConnPref.equals("favorite")){
+                String url = Constants.API_URL + syncConnPref + Constants.API_KEY + BuildConfig.API_KEY;
+                if(syncConnPref.equals("popular") ){
+                    resetScrollGridView();
+                    setPop();
+                    getMoviesData(url);
+                    getActivity().setTitle("Pop Movies");
+                } if(syncConnPref.equals("top_rated")) {
+                    resetScrollGridView();
+                    setTop();
+                    getMoviesData(url);
+                    getActivity().setTitle("Top Movies");
+                }
+            } else {
                 resetScrollGridView();
-                setPop();
-                getMoviesData(url);
-                getActivity().setTitle("Pop Movies");
-            } if(syncConnPref.equals("top_rated") && !isTop()) {
-                resetScrollGridView();
-                setTop();
-                getMoviesData(url);
-                getActivity().setTitle("Top Movies");
+                setFav();
+                ArrayList<Movie> movies = db.getAllMovies();
+                ArrayList<ImageItem> tempImageItems = getData(movies);
+                gridAdapter = new GridViewAdapter(getContext(), R.layout.grid_item_layout, tempImageItems);
+                gridAdapter.notifyDataSetChanged();
+                gridView.setAdapter(gridAdapter);
+                getActivity().setTitle("Fav Movies");
+                Log.i("fav movies", "db loaded");
             }
-        } else {
-            resetScrollGridView();
-            setFav();
-            ArrayList<Movie> movies = db.getAllMovies();
-            ArrayList<ImageItem> tempImageItems = getData(movies);
-            gridAdapter = new GridViewAdapter(getContext(), R.layout.grid_item_layout, tempImageItems);
-            gridAdapter.notifyDataSetChanged();
-            gridView.setAdapter(gridAdapter);
-            getActivity().setTitle("Fav Movies");
         }
+        this.syncConnPref = syncConnPref;
     }
 
     private ArrayList<ImageItem> getData(List<Movie> moviesData) {

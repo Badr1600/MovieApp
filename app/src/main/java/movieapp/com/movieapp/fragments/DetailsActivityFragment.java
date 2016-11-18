@@ -96,28 +96,6 @@ public class DetailsActivityFragment extends Fragment {
         movieInfo = (TextView) rootView.findViewById(R.id.textView_movie_info);
 
         db = new DatabaseHandler(rootView.getContext());
-        setListViewHeightBasedOnChildren(listViewTrailers);
-        setListViewHeightBasedOnChildren(listViewReviews);
-
-        listViewTrailers.setOnTouchListener(new View.OnTouchListener() {
-            // Setting on Touch Listener for handling the touch inside ScrollView
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                // Disallow the touch request for parent scroll on touch of child view
-                v.getParent().requestDisallowInterceptTouchEvent(true);
-                return false;
-            }
-        });
-
-        listViewReviews.setOnTouchListener(new View.OnTouchListener() {
-            // Setting on Touch Listener for handling the touch inside ScrollView
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                // Disallow the touch request for parent scroll on touch of child view
-                v.getParent().requestDisallowInterceptTouchEvent(true);
-                return false;
-            }
-        });
 
         favButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -296,6 +274,7 @@ public class DetailsActivityFragment extends Fragment {
                         trailerAdapter = new TrailerAdapter(getActivity(), R.layout.layout_trailer, tempImageItems);
                         trailerAdapter.notifyDataSetChanged();
                         listViewTrailers.setAdapter(trailerAdapter);
+                        setListViewHeightBasedOnChildren(listViewTrailers);
 
                     }
                 }, new Response.ErrorListener() {
@@ -317,6 +296,7 @@ public class DetailsActivityFragment extends Fragment {
                         reviewAdapter = new ReviewAdapter(getActivity(), R.layout.layout_review, tempReviewItems);
                         reviewAdapter.notifyDataSetChanged();
                         listViewReviews.setAdapter(reviewAdapter);
+                        setListViewHeightBasedOnChildren(listViewReviews);
 
                     }
                 }, new Response.ErrorListener() {

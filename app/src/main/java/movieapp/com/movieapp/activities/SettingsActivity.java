@@ -14,12 +14,15 @@ import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.MenuItem;
 
 import java.util.List;
 
 import movieapp.com.movieapp.AppCompatPreferenceActivity;
 import movieapp.com.movieapp.R;
+import movieapp.com.movieapp.fragments.MainActivityFragment;
+import movieapp.com.movieapp.utils.DatabaseHandler;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -48,11 +51,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 ListPreference listPreference = (ListPreference) preference;
                 int index = listPreference.findIndexOfValue(stringValue);
 
+                    preference.setSummary(
+                            index >= 0
+                                    ? listPreference.getEntries()[index]
+                                    : null);
+
                 // Set the summary to reflect the new value.
-                preference.setSummary(
-                        index >= 0
-                                ? listPreference.getEntries()[index]
-                                : null);
 
             }  else {
                 // For all other preferences, set the summary to the value's
