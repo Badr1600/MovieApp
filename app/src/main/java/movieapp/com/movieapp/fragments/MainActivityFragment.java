@@ -1,10 +1,11 @@
 package movieapp.com.movieapp.fragments;
 
 import android.app.ProgressDialog;
-import android.content.Intent;
 import android.content.SharedPreferences;
+import android.preference.ListPreference;
+import android.preference.Preference;
 import android.preference.PreferenceManager;
-import android.support.design.widget.Snackbar;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -31,8 +32,6 @@ import java.util.List;
 
 import movieapp.com.movieapp.BuildConfig;
 import movieapp.com.movieapp.R;
-import movieapp.com.movieapp.activities.ScrollingActivityDetails;
-import movieapp.com.movieapp.activities.SettingsActivity;
 import movieapp.com.movieapp.adapter.GridViewAdapter;
 import movieapp.com.movieapp.adapter.ImageItem;
 import movieapp.com.movieapp.movies.details.Movie;
@@ -63,6 +62,7 @@ public class MainActivityFragment extends Fragment  {
     private boolean popFlag;
     private boolean favFlag;
     private boolean topFlag;
+    private boolean rotatedScreen;
 
     public MainActivityFragment() {
     }
@@ -71,8 +71,8 @@ public class MainActivityFragment extends Fragment  {
     public View onCreateView(final LayoutInflater inflater, ViewGroup container,
                              final Bundle savedInstanceState) {
 
-
         final View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+
         gridView = (GridView) rootView.findViewById(R.id.gridView);
         swipeRefreshLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.fragment_main);
         pDialog = new ProgressDialog(getContext());
@@ -113,9 +113,9 @@ public class MainActivityFragment extends Fragment  {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
         syncConnPref = sharedPref.getString("sort_type", "top_rated");
 
-        if(!syncConnPref.equals("favorite")){
+        if (!syncConnPref.equals("favorite")) {
             String url = Constants.API_URL + syncConnPref + Constants.API_KEY + BuildConfig.API_KEY;
-            if(syncConnPref.equals("popular")){
+            if (syncConnPref.equals("popular")) {
                 setPop();
                 getActivity().setTitle("Pop Movies");
             } else {
@@ -136,18 +136,19 @@ public class MainActivityFragment extends Fragment  {
         return rootView;
     }
 
-    private void refreshMoviesData (){
+    private void refreshMoviesData () {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
         syncConnPref = sharedPref.getString("sort_type", "top_rated");
 
-        if(!syncConnPref.equals("favorite")){
+        if (!syncConnPref.equals("favorite")) {
             String url = Constants.API_URL + syncConnPref + Constants.API_KEY + BuildConfig.API_KEY;
-            if(syncConnPref.equals("popular")){
+            if (syncConnPref.equals("popular")) {
                 resetScrollGridView();
                 setPop();
                 getMoviesData(url);
                 getActivity().setTitle("Pop Movies");
-            } if(syncConnPref.equals("top_rated")) {
+            }
+            if (syncConnPref.equals("top_rated")) {
                 resetScrollGridView();
                 setTop();
                 getMoviesData(url);
@@ -165,6 +166,7 @@ public class MainActivityFragment extends Fragment  {
             Log.i("fav movies", "db loaded");
 
         }
+
     }
 
     private void isScrollCompleted() {
@@ -199,36 +201,44 @@ public class MainActivityFragment extends Fragment  {
     @Override
     public void onResume() {
         super.onResume();
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        String syncConnPref = sharedPref.getString("sort_type", "top_rated");
+        if (!rotatedScreen) {
+            Log.d("onResume", "Yrotated");
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String syncConnPref = sharedPref.getString("sort_type", "top_rated");
 
-        if (!syncConnPref.equals(this.syncConnPref)) {
-            if(!syncConnPref.equals("favorite")){
-                String url = Constants.API_URL + syncConnPref + Constants.API_KEY + BuildConfig.API_KEY;
-                if(syncConnPref.equals("popular") ){
+            if (!syncConnPref.equals(this.syncConnPref)) {
+                if (!syncConnPref.equals("favorite")) {
+                    String url = Constants.API_URL + syncConnPref + Constants.API_KEY + BuildConfig.API_KEY;
+                    if (syncConnPref.equals("popular")) {
+                        resetScrollGridView();
+                        setPop();
+                        getMoviesData(url);
+                        getActivity().setTitle("Pop Movies");
+                    }
+                    if (syncConnPref.equals("top_rated")) {
+                        resetScrollGridView();
+                        setTop();
+                        getMoviesData(url);
+                        getActivity().setTitle("Top Movies");
+                    }
+                } else {
                     resetScrollGridView();
-                    setPop();
-                    getMoviesData(url);
-                    getActivity().setTitle("Pop Movies");
-                } if(syncConnPref.equals("top_rated")) {
-                    resetScrollGridView();
-                    setTop();
-                    getMoviesData(url);
-                    getActivity().setTitle("Top Movies");
+                    setFav();
+                    ArrayList<Movie> movies = db.getAllMovies();
+                    ArrayList<ImageItem> tempImageItems = getData(movies);
+                    gridAdapter = new GridViewAdapter(getContext(), R.layout.grid_item_layout, tempImageItems);
+                    gridAdapter.notifyDataSetChanged();
+                    gridView.setAdapter(gridAdapter);
+                    getActivity().setTitle("Fav Movies");
+                    Log.i("fav movies", "db loaded");
                 }
-            } else {
-                resetScrollGridView();
-                setFav();
-                ArrayList<Movie> movies = db.getAllMovies();
-                ArrayList<ImageItem> tempImageItems = getData(movies);
-                gridAdapter = new GridViewAdapter(getContext(), R.layout.grid_item_layout, tempImageItems);
-                gridAdapter.notifyDataSetChanged();
-                gridView.setAdapter(gridAdapter);
-                getActivity().setTitle("Fav Movies");
-                Log.i("fav movies", "db loaded");
             }
+            this.syncConnPref = syncConnPref;
+        } else {
+            rotatedScreen = false;
+            Log.d("onResume", "Xrotated");
+
         }
-        this.syncConnPref = syncConnPref;
     }
 
     private ArrayList<ImageItem> getData(List<Movie> moviesData) {
@@ -318,20 +328,67 @@ public class MainActivityFragment extends Fragment  {
         popFlag = false;
     }
 
-    private boolean isPop(){
-        return popFlag;
-    }
-
-    private boolean isTop(){
-        return topFlag;
-    }
-
-    private boolean isFav(){
-        return favFlag;
-    }
-
     private void resetScrollGridView () {
         pagesCount = 1;
         counter = 0;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+        if(savedInstanceState != null){
+            if (savedInstanceState.getBoolean("rotated")){
+                rotatedScreen = true;
+                Log.d("rotated", "true");
+            }
+        }
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_main, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+        return;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_most_pop) {
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString("sort_type", getString(R.string.popular));
+            editor.commit();
+            refreshMoviesData();
+            return true;
+        }
+        if (id == R.id.action_top_rated) {
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString("sort_type", getString(R.string.top_rated));
+            editor.commit();
+            refreshMoviesData();
+            return true;
+        }
+        if (id == R.id.action_favorite) {
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString("sort_type", getString(R.string.favourite));
+            editor.commit();
+            refreshMoviesData();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("rotated",true);
     }
 }
